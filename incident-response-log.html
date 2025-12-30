@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Response Log</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Georgia, serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 15px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            text-align: center;
+        }
+        
+        .stat-card.total { background: #3498db; }
+        .stat-card.resolved { background: #27ae60; }
+        .stat-card.in-progress { background: #f39c12; }
+        .stat-card.critical { background: #e74c3c; }
+        
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .add-incident {
+            background: #ecf0f1;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .add-incident h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: Georgia, serif;
+        }
+        
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .incidents-list {
+            margin-top: 20px;
+        }
+        
+        .incident-card {
+            background: white;
+            border: 1px solid #dfe6e9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: box-shadow 0.3s;
+        }
+        
+        .incident-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .incident-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .incident-title {
+            font-size: 20px;
+            color: #2c3e50;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .incident-meta {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+        
+        .priority-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .priority-low { background: #d4edda; color: #155724; }
+        .priority-medium { background: #fff3cd; color: #856404; }
+        .priority-high { background: #f8d7da; color: #721c24; }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        .status-resolved { background: #d4edda; color: #155724; }
+        .status-in-progress { background: #fff3cd; color: #856404; }
+        .status-open { background: #d1ecf1; color: #0c5460; }
+        
+        .incident-section {
+            margin-bottom: 15px;
+        }
+        
+        .incident-section h4 {
+            color: #34495e;
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .incident-section p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        .incident-actions {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ecf0f1;
+        }
+        
+        .delete-btn {
+            background: #e74c3c;
+            padding: 8px 16px;
+            font-size: 13px;
+        }
+        
+        .delete-btn:hover {
+            background: #c0392b;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #95a5a6;
+        }
+        
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #dfe6e9;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Incident Response Log</h1>
+        <p class="subtitle">Document and track IT incidents, troubleshooting steps, and resolutions</p>
+        
+        <div class="stats">
+            <div class="stat-card total">
+                <div class="stat-number" id="totalIncidents">0</div>
+                <div class="stat-label">Total Incidents</div>
+            </div>
+            <div class="stat-card resolved">
+                <div class="stat-number" id="resolvedIncidents">0</div>
+                <div class="stat-label">Resolved</div>
+            </div>
+            <div class="stat-card in-progress">
+                <div class="stat-number" id="inProgressIncidents">0</div>
+                <div class="stat-label">In Progress</div>
+            </div>
+            <div class="stat-card critical">
+                <div class="stat-number" id="openIncidents">0</div>
+                <div class="stat-label">Open</div>
+            </div>
+        </div>
+        
+        <div class="add-incident">
+            <h3>Log New Incident</h3>
+            <form id="incidentForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Incident Title *</label>
+                        <input type="text" id="title" required placeholder="Brief description of the issue">
+                    </div>
+                    <div class="form-group">
+                        <label>Date & Time *</label>
+                        <input type="datetime-local" id="datetime" required>
+                    </div>
+                    <div class="form-group">
+                        <label>System/Application *</label>
+                        <input type="text" id="system" required placeholder="e.g., WEB-SERVER-01">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Priority *</label>
+                        <select id="priority" required>
+                            <option value="">Select Priority</option>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Status *</label>
+                        <select id="status" required>
+                            <option value="">Select Status</option>
+                            <option value="open">Open</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="resolved">Resolved</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Reported By *</label>
+                        <input type="text" id="reportedBy" required placeholder="Your name or username">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Problem Description *</label>
+                    <textarea id="description" required placeholder="Detailed description of the incident and symptoms observed"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Troubleshooting Steps Taken *</label>
+                    <textarea id="troubleshooting" required placeholder="Document all diagnostic steps and investigations performed"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Root Cause</label>
+                    <textarea id="rootCause" placeholder="What caused the issue? (Leave blank if still investigating)"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Resolution</label>
+                    <textarea id="resolution" placeholder="How was the issue resolved? (Leave blank if not yet resolved)"></textarea>
+                </div>
+                
+                <button type="submit">Log Incident</button>
+            </form>
+        </div>
+        
+        <div class="incidents-list">
+            <h3 style="color: #2c3e50; margin-bottom: 20px;">Incident History</h3>
+            <div id="incidentsContainer">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>No incidents logged yet. Use the form above to document your first incident.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Project by Evan Jania 2025
+        </div>
+    </div>
+    
+    <script>
+        let incidents = [];
+        
+        function updateStats() {
+            const total = incidents.length;
+            const resolved = incidents.filter(i => i.status === 'resolved').length;
+            const inProgress = incidents.filter(i => i.status === 'in-progress').length;
+            const open = incidents.filter(i => i.status === 'open').length;
+            
+            document.getElementById('totalIncidents').textContent = total;
+            document.getElementById('resolvedIncidents').textContent = resolved;
+            document.getElementById('inProgressIncidents').textContent = inProgress;
+            document.getElementById('openIncidents').textContent = open;
+        }
+        
+        function formatDateTime(datetime) {
+            const date = new Date(datetime);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function renderIncidents() {
+            const container = document.getElementById('incidentsContainer');
+            
+            if (incidents.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>No incidents logged yet. Use the form above to document your first incident.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = incidents.map((incident, index) => `
+                <div class="incident-card">
+                    <div class="incident-header">
+                        <div>
+                            <div class="incident-title">${incident.title}</div>
+                            <div class="incident-meta">
+                                <span>📅 ${formatDateTime(incident.datetime)}</span>
+                                <span>💻 ${incident.system}</span>
+                                <span>👤 ${incident.reportedBy}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="priority-badge priority-${incident.priority}">
+                                ${incident.priority.toUpperCase()} Priority
+                            </span>
+                            <span class="status-badge status-${incident.status}">
+                                ${incident.status === 'in-progress' ? 'In Progress' : incident.status.charAt(0).toUpperCase() + incident.status.slice(1)}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="incident-section">
+                        <h4>Problem Description</h4>
+                        <p>${incident.description}</p>
+                    </div>
+                    
+                    <div class="incident-section">
+                        <h4>Troubleshooting Steps</h4>
+                        <p>${incident.troubleshooting}</p>
+                    </div>
+                    
+                    ${incident.rootCause ? `
+                        <div class="incident-section">
+                            <h4>Root Cause</h4>
+                            <p>${incident.rootCause}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${incident.resolution ? `
+                        <div class="incident-section">
+                            <h4>Resolution</h4>
+                            <p>${incident.resolution}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="incident-actions">
+                        <button class="delete-btn" onclick="deleteIncident(${index})">Delete Incident</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function deleteIncident(index) {
+            if (confirm('Are you sure you want to delete this incident?')) {
+                incidents.splice(index, 1);
+                renderIncidents();
+                updateStats();
+            }
+        }
+        
+        document.getElementById('incidentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const incident = {
+                title: document.getElementById('title').value,
+                datetime: document.getElementById('datetime').value,
+                system: document.getElementById('system').value,
+                priority: document.getElementById('priority').value,
+                status: document.getElementById('status').value,
+                reportedBy: document.getElementById('reportedBy').value,
+                description: document.getElementById('description').value,
+                troubleshooting: document.getElementById('troubleshooting').value,
+                rootCause: document.getElementById('rootCause').value,
+                resolution: document.getElementById('resolution').value
+            };
+            
+            incidents.unshift(incident);
+            renderIncidents();
+            updateStats();
+            
+            this.reset();
+            alert('Incident logged successfully!');
+        });
+        
+        updateStats();
+    </script>
+</body>
+</html>
